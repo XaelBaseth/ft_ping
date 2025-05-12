@@ -30,13 +30,10 @@ CLEARLINE	=	\033[1A\033[K
 #--------------------------------------------Files--------------------------------------------
 
 MAIN_DIR	=	main/
-MAIN_FILES	=	ft_ping utils
+MAIN_FILES	=	ft_ping init utils
 
 ELF_DIR		=	elf/
-ELF_FILES	=	checkers endian
-
-ENCR_DIR	=	encryption/
-ENCR_FILES	=	encryption injection segment
+ELF_FILES	=	check icmp rtts
 
 SRC_MAI_FILE=	$(addprefix $(MAIN_DIR), $(MAIN_FILES))
 SRC_ELF_FILE=	$(addprefix $(ELF_DIR), $(ELF_FILES))
@@ -47,12 +44,9 @@ MOBJ		=	$(addprefix $(OBJ_DIR), $(addsuffix .o, $(SRC_MAI_FILE)))
 ELFSRC		=	$(addprefix $(SRC_DIR), $(addsuffix .c, $(SRC_ELF_FILE)))
 ELFOBJ		=	$(addprefix $(OBJ_DIR), $(addsuffix .o, $(SRC_ELF_FILE)))
 
-ENCSRC		=	$(addprefix $(SRC_DIR), $(addsuffix .c, $(SRC_ENC_FILE)))
-ENCOBJ		=	$(addprefix $(OBJ_DIR), $(addsuffix .o, $(SRC_ENC_FILE)))
-
 OBJF		=	.cache_exists
 
-OBJ 		=	$(MOBJ) $(ELFOBJ) $(ENCOBJ)
+OBJ 		=	$(MOBJ) $(ELFOBJ)
 
 #--------------------------------------------Rules--------------------------------------------
 
