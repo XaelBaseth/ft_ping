@@ -8,7 +8,7 @@ HEADER		=	-I inc
 SRC_DIR 	=	src/
 OBJ_DIR 	=	obj/
 CC			=	gcc
-CFLAGS		=	-Wall -Wextra -Werror -g -fsanitize=address
+CFLAGS		=	-Wall -Wextra -Werror -g
 LIBFT		=	lib/libft/
 RM			=	rm -rf
 ECHO		=	echo
@@ -32,21 +32,21 @@ CLEARLINE	=	\033[1A\033[K
 MAIN_DIR	=	main/
 MAIN_FILES	=	ft_ping init utils
 
-ELF_DIR		=	elf/
-ELF_FILES	=	check icmp rtts
+LOOP_DIR	=	loop/
+LOOP_FILES	=	check_args icmp rtts
 
 SRC_MAI_FILE=	$(addprefix $(MAIN_DIR), $(MAIN_FILES))
-SRC_ELF_FILE=	$(addprefix $(ELF_DIR), $(ELF_FILES))
+SRC_LOO_FILE=	$(addprefix $(LOOP_DIR), $(LOOP_FILES))
 
 MSRC		=	$(addprefix $(SRC_DIR), $(addsuffix .c, $(SRC_MAI_FILE)))
 MOBJ		=	$(addprefix $(OBJ_DIR), $(addsuffix .o, $(SRC_MAI_FILE)))
 
-ELFSRC		=	$(addprefix $(SRC_DIR), $(addsuffix .c, $(SRC_ELF_FILE)))
-ELFOBJ		=	$(addprefix $(OBJ_DIR), $(addsuffix .o, $(SRC_ELF_FILE)))
+LOOSRC		=	$(addprefix $(SRC_DIR), $(addsuffix .c, $(SRC_LOO_FILE)))
+LOOOBJ		=	$(addprefix $(OBJ_DIR), $(addsuffix .o, $(SRC_LOO_FILE)))
 
 OBJF		=	.cache_exists
 
-OBJ 		=	$(MOBJ) $(ELFOBJ)
+OBJ 		=	$(MOBJ) $(LOOOBJ)
 
 #--------------------------------------------Rules--------------------------------------------
 
@@ -59,7 +59,7 @@ $(NAME):		$(OBJ) $(OBJF)
 					@make -C $(LIBFT)
 					@cp $(LIBFT)/libft.a .
 					@$(RM) $(LIBFT)/libft.a
-					@$(CC) $(CFLAGS) $(OBJ) $(HEADER) libft.a -o $(NAME)
+					@$(CC) $(CFLAGS) $(OBJ) $(HEADER) libft.a -o $(NAME) -lm
 					@$(ECHO) "$(YELLOW)[FT_PING]:\t$(ORANGE)[==========]\t$(GREEN) => Success!$(DEF_COLOR)\n"
 
 $(OBJ_DIR)%.o:	$(SRC_DIR)%.c $(OBJF)
@@ -73,9 +73,7 @@ $(OBJ_DIR)%.o:	$(SRC_DIR)%.s $(OBJF)
 $(OBJF):
 					@mkdir -p $(OBJ_DIR)
 					@mkdir -p $(OBJ_DIR)$(MAIN_DIR)
-					@mkdir -p $(OBJ_DIR)$(ELF_DIR)
-					@mkdir -p $(OBJ_DIR)$(ENCR_DIR)
-					@mkdir -p $(OBJ_DIR)$(ASM_DIR)
+					@mkdir -p $(OBJ_DIR)$(LOOP_DIR)
 					@touch $(OBJF)
 
 help: ## Print help on Makefile.
