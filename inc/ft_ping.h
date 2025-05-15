@@ -38,6 +38,7 @@
 
 extern _Bool pingloop;
 extern _Bool send_packet;
+extern t_packinfo *g_pi;
 
 
 enum    e_exitcode {
@@ -53,6 +54,8 @@ typedef struct    s_options {
     _Bool         help;
     _Bool         quiet;
     _Bool         verb;
+    _Bool         timestamp;
+    int           count;
 }                 t_options;
 
 typedef struct      s_rtt_node {
@@ -63,10 +66,14 @@ typedef struct      s_rtt_node {
 typedef struct        s_packinfo {
     int               nb_send;
     int               nb_ok;
+    int               nb_recv;
     struct timeval    *min;
     struct timeval    *max;
     struct timeval    avg;
     struct timeval    stddev;
+    struct timeval    start_time;
+    struct timeval    end_time;
+    struct timeval    last_send_time;
     t_rtt_node        *rtt_list;
     t_rtt_node        *rtt_last;
 }                     t_packinfo;

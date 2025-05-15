@@ -1,4 +1,4 @@
-# include "../../inc/loop.h"
+#include "../../inc/loop.h"
 
 /**
  * Calculate the round-trip time (RTT) of a received ICMP packet.

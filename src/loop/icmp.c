@@ -72,6 +72,10 @@ int icmp_send_ping(int sock_fd, const t_sockinfo *si, t_packinfo *pi) {
 	if (fill_icmp_echo_packet(buf, sizeof(buf)) == -1)
 		return -1;
 
+    if (pi->nb_send == 0) {
+        gettimeofday(&pi->start_time, NULL);
+    }
+
 	nb_bytes = sendto(sock_fd, buf, sizeof(buf), 0,
 			  (const struct sockaddr *)&si->remote_addr,
 			  sizeof(si->remote_addr));
@@ -81,7 +85,7 @@ int icmp_send_ping(int sock_fd, const t_sockinfo *si, t_packinfo *pi) {
 	return 0;
 
 err:
-	if (errno == EACCES) {
+    if (errno == EACCES) {
 		ft_printf("ft_ping: socket access error. Are you trying "
 		       "to ping broadcast ?\n");
 	} else {

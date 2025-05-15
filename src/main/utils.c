@@ -7,13 +7,16 @@
  * Called when the user passes -h or on incorrect usage.
  */
 void print_help() {
-	ft_printf("Usage: ping [OPTION...] HOST ...\n"
+	ft_printf("Usage: ft_ping [OPTION...] HOST ...\n"
 	       "Send ICMP ECHO_REQUEST packets to network hosts.\n\n"
-	       " Options:\n"
-	       "\t-h\t\t\t\tShow help\n"
+	       "Options:\n"
+           "\t<HOST>\t\t\t\tDNS name or IP address v4\n"
 	       "\t-?\t\t\t\tShow help\n"
+           "\t-c <count>\t\t\tstop after <count> replies\n"
+           "\t-D\t\t\t\tprint timestamp UNIX style\n"
+           "\t-h\t\t\t\tShow help\n"
 	       "\t-q\t\t\t\tQuiet output\n"
-	       "\t-v\t\t\t\tVerbose output\n");
+	       "\t-v\t\t\t\tVerbose output\n\n");
 }
 
 /**
@@ -186,29 +189,38 @@ static void print_err_icmp_body(uint8_t *buf) {
  * Return: 0 on success, -1 on error.
  */
 int print_recv_info(void *buf, ssize_t nb_bytes, const t_options *opts, const t_packinfo *pi) {
-	char addr[INET_ADDRSTRLEN] = {};
-	struct iphdr *iph = buf;
-	struct icmphdr *icmph = skip_iphdr(iph);
+    char addr[INET_ADDRSTRLEN] = {};
+    struct iphdr *iph = buf;
+    struct icmphdr *icmph = skip_iphdr(iph);
 
     if (!inet_ntop(AF_INET, &iph->saddr, addr, INET_ADDRSTRLEN)) {
         perror("inet_ntop");
         return -1;
     }
 
-	inet_ntop(AF_INET, &iph->saddr, addr, INET_ADDRSTRLEN);
-	if (!opts->quiet && icmph->type == ICMP_ECHOREPLY) {
-		printf("%ld bytes from %s: ", nb_bytes - IP_HDR_SIZE, addr);
-		printf("icmp_seq=%d ttl=%d time=", icmph->un.echo.sequence,
-		        iph->ttl);
-		print_icmp_rtt(&pi->rtt_last->val);
-		printf(" ms\n");
-	} else if (icmph->type != ICMP_ECHOREPLY) {
-		printf("%ld bytes from %s: ", nb_bytes - IP_HDR_SIZE, addr);
-		print_icmp_err(icmph->type, icmph->code);
-		if (opts->verb)
-			print_err_icmp_body((uint8_t *)icmph);
-	}
-	return 0;
+    struct timeval now = {0};
+    if (opts->timestamp)
+        gettimeofday(&now, NULL);
+
+    if (!opts->quiet && icmph->type == ICMP_ECHOREPLY) {
+        if (opts->timestamp)
+            printf("[%ld.%06ld] ", now.tv_sec, (long)now.tv_usec);
+        printf("%ld bytes from %s: ", nb_bytes - IP_HDR_SIZE, addr);
+        printf("icmp_seq=%d ttl=%d time=", icmph->un.echo.sequence, iph->ttl);
+        print_icmp_rtt(&pi->rtt_last->val);
+        printf(" ms\n");
+    }
+
+    else if (icmph->type != ICMP_ECHOREPLY) {
+        if (opts->timestamp)
+            printf("[%ld.%06ld] ", now.tv_sec, (long)now.tv_usec);
+        printf("%ld bytes from %s: ", nb_bytes - IP_HDR_SIZE, addr);
+        print_icmp_err(icmph->type, icmph->code);
+        if (opts->verb)
+            print_err_icmp_body((uint8_t *)icmph);
+    }
+
+    return 0;
 }
 
 /**
@@ -233,10 +245,13 @@ static float calc_packet_loss(const t_packinfo *pi) {
  * @param pi: Packet statistics structure.
  */
 void print_end_info(const t_sockinfo *si, t_packinfo *pi) {
+    struct timeval delta;
+    timersub(&pi->end_time, &pi->start_time, &delta);
+    long elapsed_ms = delta.tv_sec * 1000 + delta.tv_usec / 1000;
 	ft_printf("\n--- %s ping statistics ---\n", si->host);
-	ft_printf("%d packets transmitted, %d packets received, "
-	       "%d%% packet loss\n", pi->nb_send, pi->nb_ok,
-	       (int)calc_packet_loss(pi));
+	printf("%d packets transmitted, %d packets received, "
+	       "%d%% packet loss, time %ldms\n", pi->nb_send, pi->nb_ok,
+	       (int)calc_packet_loss(pi), elapsed_ms);
 	if (pi->nb_ok) {
 		rtts_calc_stats(pi);
 	    printf("round-trip min/avg/max/stddev = ");
