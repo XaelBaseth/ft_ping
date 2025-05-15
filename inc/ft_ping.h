@@ -56,6 +56,9 @@ typedef struct    s_options {
     _Bool         verb;
     _Bool         timestamp;
     int           count;
+    float         interval;
+    uint8_t       ttl;
+    _Bool         no_dns;
 }                 t_options;
 
 typedef struct      s_rtt_node {

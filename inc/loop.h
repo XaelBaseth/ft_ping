@@ -26,7 +26,7 @@ typedef struct s_rtt_node   t_rtt_node;
 /*-----------------------------------------------------------------------------
                                 FUNCTIONS
 -----------------------------------------------------------------------------*/
-int         icmp_recv_ping(int sock_fd, t_packinfo *pi, const t_options *opts);
+int         icmp_recv_ping(int sock_fd, t_packinfo *pi, const t_options *opts, const t_sockinfo *si);
 int         icmp_send_ping(int sock_fd, const t_sockinfo *si, t_packinfo *pi);
 void        rtts_calc_stats(t_packinfo *pi);
 void        calc_stddev(t_packinfo *pi, long nb_elem);

@@ -50,21 +50,38 @@ _Bool    should_stop(t_packinfo *pi, t_options *opts) {
     return 0;
 }
 
+/**
+ * Arm a one-shot real-time interval timer to schedule the next ping.
+ *
+ * Sets the ITIMER_REAL timer with the given interval (in seconds).
+ * The timer is non-repeating (one-shot), used to trigger SIGALRM.
+ *
+ * @param interval The delay in seconds before the timer expires (can be fractional).
+ */
+static void set_ping_timer(float interval) {
+    struct itimerval timer;
+    timer.it_value.tv_sec = (int)interval;
+    timer.it_value.tv_usec = (int)((interval - (int)interval) * 1e6);
+    timer.it_interval.tv_sec = 0;
+    timer.it_interval.tv_usec = 0;
+    setitimer(ITIMER_REAL, &timer, NULL);
+}
+
 int main(int argc, char **argv) {
     int ret;
     int sock_fd;
     char *host = NULL;
-    t_options opts = { .count = -1, };
+    t_options opts = { .count = -1, .interval = 1.0f, .ttl = 64, };
     t_sockinfo si = {};
     t_packinfo pi = {
-        .last_send_time = {0, 0}, // Initialize the last send time
+        .last_send_time = {0, 0},
     };
 
     if (check_rights() == -1)
         return E_EXIT_ERR_ARGS;
     if ((ret = parse_args(argc, argv, &host, &opts)) != 0)
         return ret == -1 ? E_EXIT_ERR_ARGS : E_EXIT_OK;
-    if (init_sock(&sock_fd, &si, host, IP_TTL_VALUE) == -1)
+    if (init_sock(&sock_fd, &si, host, opts.ttl) == -1)
         return E_EXIT_ERR_HOST;
 
     signal(SIGINT, &handler);
@@ -77,19 +94,17 @@ int main(int argc, char **argv) {
             send_packet = 0;
             if (icmp_send_ping(sock_fd, &si, &pi) == -1)
                 goto fatal_close_sock;
-            // Store the time when we sent the packet
             gettimeofday(&pi.last_send_time, NULL);
-            alarm(1);
+            set_ping_timer(opts.interval);
         }
-
-        if (icmp_recv_ping(sock_fd, &pi, &opts) == -1)
+        if (icmp_recv_ping(sock_fd, &pi, &opts, &si) == -1)
             goto fatal_close_sock;
-
         if (should_stop(&pi, &opts)) {
             gettimeofday(&pi.end_time, NULL);
             pingloop = 0;
         }
     }
+
     print_end_info(&si, &pi);
 
     close(sock_fd);

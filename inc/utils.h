@@ -27,6 +27,6 @@ void    handler(int signum);
 void    print_help();
 void    print_start_info(const t_sockinfo *si, const t_options *opts);
 void    print_end_info(const t_sockinfo *si, t_packinfo *pi);
-int     print_recv_info(void *buf, ssize_t nb_bytes, const t_options *opts, const t_packinfo *pi);
+int     print_recv_info(void *buf, ssize_t nb_bytes, const t_options *opts, const t_packinfo *pi, const t_sockinfo *si);
 
 #endif

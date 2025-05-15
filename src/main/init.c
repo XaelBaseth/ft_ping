@@ -36,8 +36,7 @@ static int init_sock_addr(t_sockinfo *si)
 }
 
 /**
- * Create a raw socket for sending ICMP echo requests and set the TTL value at
- * the IP level.
+ * Create a raw socket for sending ICMP echo requests and set the TTL value at the IP level.
  *
  * @param ttl Time To Live value to be set for outgoing packets.
  *

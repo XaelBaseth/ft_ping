@@ -1,6 +1,6 @@
 #include "../../inc/ft_ping.h"
 
-static const char supported_opts[] = "h?qvcD";
+static const char supported_opts[] = "h?qvcDitn";
 
 /**
 * Make sure ping is running with admin rights.
@@ -37,6 +37,12 @@ static int handle_option(char opt, t_options *opts) {
         break;
     case 'D': opts->timestamp = 1;
         break;
+    case 'i': opts->interval = 1;
+        break;
+    case 't': opts->ttl = 1;
+        break;
+    case 'n': opts->no_dns = 1;
+        break;
     default:
         ft_printf("ft_ping: invalid option -- '%c'\n", opt);
         return -1;
@@ -62,6 +68,19 @@ static int parse_option_arg(const char *arg, t_options *opts) {
     return 0;
 }
 
+
+/**
+ * Handle the '-c' option to specify the number of ping requests.
+ *
+ * Parses the count value either attached to the option (e.g., `-c5`) or provided as the next argument (e.g., `-c 5`). Stores the value in `opts->count`.
+ *
+ * @param argc The argument count from main().
+ * @param argv The argument vector from main().
+ * @param i Pointer to the current index in argv, will be incremented if value is in the next arg.
+ * @param opts Pointer to the options structure where the count will be stored.
+ *
+ * @return 0 on success, -1 on failure (e.g., missing or invalid value).
+ */
 static int handle_count_option(int argc, char **argv, int *i, t_options *opts) {
     const char *arg = argv[*i];
 
@@ -83,6 +102,59 @@ static int handle_count_option(int argc, char **argv, int *i, t_options *opts) {
 }
 
 /**
+ * Parse the -i option argument and set interval in options.
+ *
+ * @argc: Argument count.
+ * @argv: Argument vector.
+ * @index: Pointer to current index in argv, will be incremented if argument consumed.
+ * @opts: Pointer to options struct to update.
+ *
+ * @return: 0 on success, -1 on error (invalid or missing argument).
+ */
+static int handle_interval_option(int argc, char **argv, int *index, t_options *opts) {
+    if (*index + 1 >= argc) {
+        ft_printf("ft_ping: option -i requires an argument\n");
+        return -1;
+    }
+    char *arg = argv[++(*index)];
+    float val = atoi(arg);
+    if (val <= 0.0f) {
+        ft_printf("ft_ping: invalid interval '%s'\n", arg);
+        return -1;
+    }
+    opts->interval = val;
+    return 0;
+}
+
+/**
+ * Handle the '-t' option to set the TTL (Time To Live).
+ *
+ * Extracts the TTL value from the next argument and validates it's within [1, 255].
+ * The value is then assigned to `opts->ttl`.
+ *
+ * @param argc The argument count from main().
+ * @param argv The argument vector from main().
+ * @param index Pointer to the current index in argv, will be incremented to access TTL value.
+ * @param opts Pointer to the options structure where the TTL will be stored.
+ *
+ * @return 0 on success, -1 on failure (e.g., missing or out-of-range value).
+ */
+static int handle_ttl_option(int argc, char **argv, int *index, t_options *opts) {
+    if (*index + 1 >= argc) {
+        ft_printf("ft_ping: option -t requires an argument\n");
+        return -1;
+    }
+    char *arg = argv[++(*index)];
+    int val = atoi(arg);
+    if (val <= 0 || val > 255) {
+        ft_printf("ft_ping: invalid ttl '%s' (must be 1-255)\n", arg);
+        return -1;
+    }
+    opts->ttl = (uint8_t)val;
+    return 0;
+}
+
+/**
 * Parse command-line arguments to extract options and the target host.
 *
 * @argc: Argument count.
@@ -97,10 +169,20 @@ int parse_args(int argc, char **argv, char **host, t_options *opts) {
 
     for (int i = 1; i < argc; i++) {
         if (argv[i][0] == '-' && argv[i][1]) {
-            if (argv[i][1] == 'c') {
+            switch (argv[i][1]) {
+            case 'c':
                 if (handle_count_option(argc, argv, &i, opts) == -1)
                     return -1;
-            } else {
+                break;
+            case 'i':
+                if (handle_interval_option(argc, argv, &i, opts) == -1)
+                    return -1;
+                break;
+            case 't':
+                if (handle_ttl_option(argc, argv, &i, opts) == -1)
+                    return -1;
+                break;
+            default:
                 if (parse_option_arg(argv[i], opts) == -1)
                     return -1;
             }

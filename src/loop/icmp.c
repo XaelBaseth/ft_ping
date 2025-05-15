@@ -127,32 +127,43 @@ static _Bool is_addressed_to_us(uint8_t *buf) {
 
  * Return 1 if a packet was received, 0 if no data, -1 on error.
  */
-int icmp_recv_ping(int sock_fd, t_packinfo *pi, const t_options *opts) {
-	uint8_t buf[RECV_PACK_SIZE] = {};
-	ssize_t nb_bytes;
-	struct icmphdr *icmph;
-	struct iovec iov[1] = {
-		[0] = { .iov_base = buf, .iov_len = sizeof(buf)}
-	};
-	struct msghdr msg = { .msg_iov = iov, .msg_iovlen = 1 };
+int icmp_recv_ping(int sock_fd, t_packinfo *pi, const t_options *opts, const t_sockinfo *si) {
+    uint8_t buf[RECV_PACK_SIZE] = {};
+    ssize_t nb_bytes;
+    struct icmphdr *icmph;
+    struct iovec iov[1] = {
+        [0] = { .iov_base = buf, .iov_len = sizeof(buf)}
+    };
+    struct msghdr msg = { .msg_iov = iov, .msg_iovlen = 1 };
 
-	nb_bytes = recvmsg(sock_fd, &msg, MSG_DONTWAIT);
-	if (errno != EAGAIN && errno != EWOULDBLOCK && nb_bytes == -1) {
-		ft_printf("recvmsg err: %s\n", strerror(errno));
-		return -1;
-	} else if (nb_bytes == -1) {
-		return 0;
-	}
-	icmph = skip_iphdr(buf);
-	if (!is_addressed_to_us((uint8_t *)icmph))
-		return 0;
+    nb_bytes = recvmsg(sock_fd, &msg, MSG_DONTWAIT);
+    if (errno != EAGAIN && errno != EWOULDBLOCK && nb_bytes == -1) {
+        ft_printf("recvmsg err: %s\n", strerror(errno));
+        return -1;
+    } else if (nb_bytes == -1) {
+        return 0;
+    }
 
-	if (icmph->type == ICMP_ECHOREPLY) {
-		pi->nb_ok++;
-		if (rtts_save_new(pi, icmph) == NULL)
-			return -1;
-	}
-	if (print_recv_info(buf, nb_bytes, opts, pi) == -1)
-		return -1;
-	return 1;
+    icmph = skip_iphdr(buf);
+    if (!icmph)
+        return 0;
+
+    if (icmph->type == ICMP_ECHOREPLY) {
+        if (!is_addressed_to_us((uint8_t *)icmph))
+            return 0;
+
+        pi->nb_ok++;
+        if (rtts_save_new(pi, icmph) == NULL)
+            return -1;
+        if (print_recv_info(buf, nb_bytes, opts, pi, si) == -1)
+            return -1;
+    }
+    else if (icmph->type == ICMP_TIME_EXCEEDED) {
+        struct iphdr *ip = (struct iphdr *)buf;
+        char addr_str[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &ip->saddr, addr_str, sizeof(addr_str));
+        ft_printf("From %s: Time to live exceeded\n", addr_str);
+    }
+
+    return 1;
 }
